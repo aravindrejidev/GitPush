@@ -174,7 +174,7 @@ fun SettingsTab(modifier: Modifier) {
         }
 
         SectionCard("About") {
-            Text("GitPush 1.0.0", style = MaterialTheme.typography.bodyLarge)
+            Text("GitPush 1.0.1", style = MaterialTheme.typography.bodyLarge)
             Text("Native engine ${c.engine.version}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

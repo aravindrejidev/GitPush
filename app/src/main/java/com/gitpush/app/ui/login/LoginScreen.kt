@@ -46,6 +46,7 @@ import com.gitpush.app.BuildConfig
 import com.gitpush.app.LocalContainer
 import com.gitpush.app.data.AuthException
 import com.gitpush.app.data.DeviceCode
+import com.gitpush.app.data.PendingLogin
 import com.gitpush.app.data.SettingKeys
 import com.gitpush.app.ui.common.ErrorCard
 import com.gitpush.app.ui.theme.CodeStyle
@@ -72,9 +73,16 @@ class LoginViewModel(private val c: AppContainer) : ViewModel() {
     private var job: Job? = null
 
     init {
-        viewModelScope.launch {
-            val saved = c.settings.flow.first().clientId
-            if (saved.isNotBlank()) ui.update { it.copy(clientId = saved) }
+        val pending = c.auth.loadPending()
+        if (pending != null) {
+            // The app was closed while the user was approving in the browser: carry on where we left off.
+            ui.update { it.copy(clientId = pending.clientId, device = pending.code, busy = true) }
+            job = viewModelScope.launch { awaitAndSignIn(pending, immediate = true) }
+        } else {
+            viewModelScope.launch {
+                val saved = c.settings.flow.first().clientId
+                if (saved.isNotBlank() && ui.value.clientId.isBlank()) ui.update { it.copy(clientId = saved) }
+            }
         }
     }
 
@@ -87,26 +95,39 @@ class LoginViewModel(private val c: AppContainer) : ViewModel() {
         job?.cancel()
         job = viewModelScope.launch {
             ui.update { it.copy(busy = true, error = null) }
-            try {
+            val pending = try {
                 c.settings.set(SettingKeys.clientId, id)
-                val code = c.auth.requestDeviceCode(id)
-                ui.update { it.copy(device = code) }
-                val token = c.auth.awaitDeviceToken(id, code)
-                c.auth.signInWithToken(token)
+                c.auth.requestDeviceCode(id)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: AuthException) {
-                ui.update { it.copy(error = e.message) }
             } catch (e: Exception) {
-                ui.update { it.copy(error = e.message ?: "Sign-in failed.") }
-            } finally {
-                ui.update { it.copy(busy = false, device = null) }
+                ui.update { it.copy(busy = false, error = e.message ?: "Sign-in failed.") }
+                return@launch
             }
+            ui.update { it.copy(device = pending.code) }
+            awaitAndSignIn(pending, immediate = false)
+        }
+    }
+
+    private suspend fun awaitAndSignIn(pending: PendingLogin, immediate: Boolean) {
+        try {
+            val token = c.auth.awaitDeviceToken(pending, immediate)
+            c.auth.signInWithToken(token)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: AuthException) {
+            ui.update { it.copy(error = e.message) }
+        } catch (e: Exception) {
+            ui.update { it.copy(error = e.message ?: "Sign-in failed.") }
+        } finally {
+            c.auth.clearPending()
+            ui.update { it.copy(busy = false, device = null) }
         }
     }
 
     fun cancelOAuth() {
         job?.cancel()
+        c.auth.clearPending()
         ui.update { it.copy(busy = false, device = null) }
     }
 
@@ -219,6 +240,11 @@ fun LoginScreen() {
                         CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                         Text("Waiting for approval…", style = MaterialTheme.typography.bodyMedium)
                     }
+                    Text(
+                        "Approve on GitHub, then come back. GitPush keeps waiting and signs in by itself.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     TextButton(onClick = vm::cancelOAuth) { Text("Cancel") }
                 }
             }

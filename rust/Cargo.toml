@@ -1,0 +1,27 @@
+[package]
+name = "gitpush_core"
+version = "1.0.0"
+edition = "2021"
+description = "GitPush native engine: scan, diff, pack and push over the Git smart-HTTP protocol"
+
+[lib]
+name = "gitpush_core"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+jni = "0.21"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha1 = "0.10"
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
+zip = { version = "2", default-features = false, features = ["deflate"] }
+ignore = "0.4"
+rayon = "1.10"
+ureq = { version = "2.10", features = ["json"] }
+base64 = "0.22"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true

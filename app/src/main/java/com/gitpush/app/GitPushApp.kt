@@ -20,6 +20,10 @@ class GitPushApp : Application() {
         nm.createNotificationChannel(
             NotificationChannel(PushService.CHANNEL_RESULT, "Push results", NotificationManager.IMPORTANCE_DEFAULT),
         )
-        container.appScope.launch { container.auth.restore() }
+        container.appScope.launch {
+            container.auth.restore()
+            container.updater.cleanup()
+            container.updater.check(manual = false)
+        }
     }
 }

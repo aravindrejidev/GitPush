@@ -1,5 +1,8 @@
 package com.gitpush.app.ui.home
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -72,12 +75,17 @@ fun HomeScreen(
             }
         },
     ) { padding ->
-        val m = Modifier.padding(padding)
-        when (tab) {
-            Tab.PROJECTS -> ProjectsTab(m, onNewPush, onOpenProject)
-            Tab.REPOS -> ReposTab(m, onOpenRepo)
-            Tab.HISTORY -> HistoryTab(m)
-            Tab.SETTINGS -> SettingsTab(m)
+        Column(Modifier.padding(padding)) {
+            UpdateBanner(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+            Box(Modifier.weight(1f)) {
+                val m = Modifier.fillMaxSize()
+                when (tab) {
+                    Tab.PROJECTS -> ProjectsTab(m, onNewPush, onOpenProject)
+                    Tab.REPOS -> ReposTab(m, onOpenRepo)
+                    Tab.HISTORY -> HistoryTab(m)
+                    Tab.SETTINGS -> SettingsTab(m)
+                }
+            }
         }
     }
 }

@@ -173,8 +173,15 @@ fun SettingsTab(modifier: Modifier) {
             OutlinedButton(onClick = { confirmClearHistory = true }) { Text("Clear push history") }
         }
 
+        SectionCard("App updates") {
+            UpdateStatus(onCheck = { scope.launch { c.updater.check(manual = true) } })
+            SettingField(s.updateRepo, "Update source (owner/repo)", "GitHub Releases of this repository are offered as updates") { v ->
+                scope.launch { c.settings.set(SettingKeys.updateRepo, v.trim()) }
+            }
+        }
+
         SectionCard("About") {
-            Text("GitPush 1.0.1", style = MaterialTheme.typography.bodyLarge)
+            Text("GitPush ${com.gitpush.app.BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodyLarge)
             Text("Native engine ${c.engine.version}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

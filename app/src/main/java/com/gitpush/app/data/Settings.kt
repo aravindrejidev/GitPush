@@ -5,8 +5,10 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.gitpush.app.BuildConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -28,6 +30,8 @@ data class AppSettings(
     val keepStaged: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = false,
+    val updateRepo: String = BuildConfig.UPDATE_REPO,
+    val lastUpdateCheck: Long = 0L,
 ) {
     val excludedDirSet: Set<String>
         get() = excludedDirs.lines().map { it.trim() }.filter { it.isNotEmpty() }.toSet()
@@ -54,6 +58,8 @@ object SettingKeys {
     val keepStaged = booleanPreferencesKey("keep_staged")
     val themeMode = stringPreferencesKey("theme_mode")
     val dynamicColor = booleanPreferencesKey("dynamic_color")
+    val updateRepo = stringPreferencesKey("update_repo")
+    val lastUpdateCheck = longPreferencesKey("last_update_check")
 }
 
 class SettingsRepository(private val context: Context) {
@@ -73,6 +79,8 @@ class SettingsRepository(private val context: Context) {
             keepStaged = p[SettingKeys.keepStaged] ?: d.keepStaged,
             themeMode = runCatching { ThemeMode.valueOf(p[SettingKeys.themeMode] ?: "") }.getOrDefault(d.themeMode),
             dynamicColor = p[SettingKeys.dynamicColor] ?: d.dynamicColor,
+            updateRepo = p[SettingKeys.updateRepo] ?: d.updateRepo,
+            lastUpdateCheck = p[SettingKeys.lastUpdateCheck] ?: d.lastUpdateCheck,
         )
     }
 

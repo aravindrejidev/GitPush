@@ -12,6 +12,7 @@ import com.gitpush.app.data.SecureStore
 import com.gitpush.app.data.SettingsRepository
 import com.gitpush.app.data.SourceStager
 import com.gitpush.app.push.PushCoordinator
+import com.gitpush.app.update.UpdateManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,6 +44,8 @@ class AppContainer(val app: Application) {
     val engine = GitEngine(json)
     val stager = SourceStager(app, engine)
     val coordinator = PushCoordinator(app, appScope, auth, settings, stager, engine, db)
+
+    val updater = UpdateManager(app, appScope, http, json, api, settings) { secure.get("github_token") }
 
     /** A ZIP shared into the app from another app; consumed by the push screen. */
     val sharedZip = MutableStateFlow<Uri?>(null)

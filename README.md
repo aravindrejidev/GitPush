@@ -29,15 +29,27 @@ A foreground service keeps the push alive with a progress notification if you le
 
 Tokens are encrypted with an Android Keystore AES-256-GCM key.
 
-## Build without a computer (GitHub Actions)
+## Releases (GitHub Actions)
 
-1. Put these files in a new GitHub repository (make sure the hidden `.github/` folder is included).
-2. Open **Actions → Build GitPush APK** — it runs on every push, or press *Run workflow*.
-3. Download the `GitPush-apk` artifact, unzip, install `app-release.apk`.
+1. Put these files in your GitHub repository (include the hidden `.github/` folder). Delete the old `build.yml`.
+2. Open **Actions → Release → Run workflow**, type the version (for example `1.2.0`) and run it.
+3. The workflow builds the Rust engine and the app, then publishes a **GitHub Release** `v1.2.0` with:
+   `GitPush-v1.2.0-arm64-v8a.apk` (most phones), `…-armeabi-v7a.apk` (old 32-bit phones),
+   `…-x86_64.apk`, `…-universal.apk`, and `SHA256SUMS.txt`.
+4. The version you type becomes the app's version name; the version code is derived from it
+   (`1.2.3` → `1002003`), so every release must be higher than the last.
 
-The release APK is signed with the sideload key in `keystore/`. That key is public, which is fine for a
-personal build and lets every new build update the previous install. For your own key, set the secrets
-`KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` (see `app/build.gradle.kts`).
+The release APKs are signed with the sideload key in `keystore/` (public, fine for personal builds; every
+release can update the previous one). Use the secrets `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`,
+`KEY_PASSWORD` to sign with your own key.
+
+## In-app updates
+
+GitPush looks at the latest GitHub Release of the repository it was built from (embedded by the workflow as
+`UPDATE_REPO`, editable in **Settings → App updates**). When a newer version exists a banner appears:
+**Download** (picks the APK for your phone's CPU, verifies its SHA-256) → **Install** (Android's installer;
+the first time you must allow GitPush to install apps). Private repositories work because the signed-in
+token is used to download the asset.
 
 ## Build locally
 

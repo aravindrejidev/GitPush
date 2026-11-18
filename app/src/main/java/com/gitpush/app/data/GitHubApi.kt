@@ -67,6 +67,20 @@ data class GhCommit(
     val commit: GhCommitInfo,
 )
 
+@Serializable
+data class GhAsset(val id: Long, val name: String, val size: Long = 0)
+
+@Serializable
+data class GhRelease(
+    @SerialName("tag_name") val tagName: String,
+    val name: String? = null,
+    val body: String? = null,
+    val draft: Boolean = false,
+    val prerelease: Boolean = false,
+    @SerialName("published_at") val publishedAt: String? = null,
+    val assets: List<GhAsset> = emptyList(),
+)
+
 class GitHubApi(
     private val client: OkHttpClient,
     private val json: Json,
@@ -116,6 +130,10 @@ class GitHubApi(
 
     suspend fun getUser(token: String? = null): GhUser =
         json.decodeFromString(GhUser.serializer(), get("/user", token ?: tokenProvider()))
+
+    /** Latest published, non-draft, non-prerelease release of "owner/repo". */
+    suspend fun latestRelease(ownerRepo: String): GhRelease =
+        json.decodeFromString(GhRelease.serializer(), get("/repos/$ownerRepo/releases/latest"))
 
     suspend fun getRepo(owner: String, repo: String): GhRepo =
         json.decodeFromString(GhRepo.serializer(), get("/repos/$owner/$repo"))

@@ -44,10 +44,12 @@ android {
         applicationId = "com.gitpush.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.1"
-        ndk { abiFilters += rustAbis }
+        // The release workflow passes -PVERSION_NAME / -PVERSION_CODE; local builds use the fallbacks.
+        versionCode = (project.findProperty("VERSION_CODE") as String?)?.toIntOrNull() ?: 2
+        versionName = (project.findProperty("VERSION_NAME") as String?)?.takeIf { it.isNotBlank() } ?: "1.0.1"
         buildConfigField("String", "DEFAULT_CLIENT_ID", "\"${secret("GP_CLIENT_ID") ?: ""}\"")
+        // "owner/repo" whose GitHub Releases the in-app updater follows (set by CI).
+        buildConfigField("String", "UPDATE_REPO", "\"${secret("UPDATE_REPO") ?: ""}\"")
     }
 
     signingConfigs {
@@ -79,6 +81,16 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("sideload")
+        }
+    }
+
+    // One APK per CPU architecture (+ a universal one) so each phone downloads only its own native code.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = true
         }
     }
 

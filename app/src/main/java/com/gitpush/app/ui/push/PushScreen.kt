@@ -544,7 +544,10 @@ private fun FailedPane(code: String, message: String, modifier: Modifier, onBack
 
 private fun hintFor(code: String): String? = when (code) {
     "AUTH_FAILED", "AUTH_REQUIRED" -> "Sign out and sign in again from the Settings tab."
-    "FORBIDDEN" -> "Use a token with the repo scope (and workflow if you push .github/workflows). For an organization, approve the app under its third-party access settings."
+    "FORBIDDEN" -> "Common causes: (1) the repository belongs to an organization that restricts OAuth apps. " +
+        "Open github.com/settings/applications, choose GitPush and grant that organization access, or ask an owner to approve it. " +
+        "(2) You only have read access to this repository. " +
+        "(3) The token lacks the repo scope, or a fine-grained token was not given Contents: Read and write on this repository."
     "NOT_FOUND" -> "Check the repository name and that your token can see it."
     "PUSH_REJECTED" -> "GitHub refused the update. A protected branch or repository rule may require a pull request: push to a new branch instead."
     "REMOTE_TREE_TRUNCATED" -> "Pick a new branch, or split the repository."

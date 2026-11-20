@@ -65,9 +65,21 @@ fn snippet(s: &str) -> String {
     t.trim().to_string()
 }
 
+/// GitHub error bodies are JSON ({"message": ...}) on the API and plain text on git endpoints.
+fn error_detail(body: &str) -> String {
+    if let Ok(v) = serde_json::from_str::<serde_json::Value>(body) {
+        if let Some(m) = v.get("message").and_then(|m| m.as_str()) {
+            return snippet(m);
+        }
+    }
+    snippet(body)
+}
+
 fn map_err(e: ureq::Error, what: &str) -> Error {
     match e {
         ureq::Error::Status(code, resp) => {
+            // Classic and OAuth tokens report their scopes in a response header.
+            let scopes = resp.header("x-oauth-scopes").map(|s| s.trim().to_string());
             let body = resp.into_string().unwrap_or_default();
             let lower = body.to_lowercase();
             match code {
@@ -79,13 +91,25 @@ fn map_err(e: ureq::Error, what: &str) -> Error {
                     "RATE_LIMITED",
                     "GitHub rate limit reached. Wait a few minutes and try again.",
                 ),
-                403 => Error::new(
-                    "FORBIDDEN",
-                    "Access denied. The token needs write access to this repository (scopes: repo, workflow).",
-                ),
+                403 => {
+                    let mut msg = format!("GitHub refused access while trying to {}.", what);
+                    let detail = error_detail(&body);
+                    if !detail.is_empty() {
+                        msg.push_str(&format!("\nGitHub says: {}", detail));
+                    }
+                    match &scopes {
+                        Some(s) if !s.is_empty() => msg.push_str(&format!("\nToken scopes: {}", s)),
+                        Some(_) => msg.push_str("\nToken scopes: none"),
+                        None => {}
+                    }
+                    Error::new("FORBIDDEN", msg)
+                }
                 404 => Error::new(
                     "NOT_FOUND",
-                    "Repository not found, or the token cannot access it.",
+                    format!(
+                        "GitHub could not find the repository while trying to {} (or the token cannot see it).",
+                        what
+                    ),
                 ),
                 _ => Error::new(
                     "HTTP",
